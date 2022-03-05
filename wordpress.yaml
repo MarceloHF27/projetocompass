@@ -1,0 +1,64 @@
+#PERSISTENT VOLUME WORDPRESS
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: wordpress-pv
+  namespace: projetocompass
+spec:
+  capacity:
+    storage: 3Gi
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: local-storage
+  hostPath:
+    path: /data/wordpress-pv/
+---
+#PERSISTENT COLUME CLAIM WORDPRESS
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wordpress-pvc
+  namespace: projetocompass
+  labels:
+    app: wordpress
+spec:
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+---
+#SERVICE WORDPRESS
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress-svc
+  namespace: projetocompass
+  labels:
+    app: wordpress
+spec:
+  selector:
+    app: wordpress
+    tier: frontend
+  ports:
+    - port: 80
+---
+#INGRESS WORDPRESS
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wordpress-ingress
+  namespace: projetocompass
+spec:
+  rules:
+  - host: projetofinal.compass.uol
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: wordpress-svc
+            port:
+              number: 80

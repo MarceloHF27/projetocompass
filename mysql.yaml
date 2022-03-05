@@ -1,0 +1,96 @@
+#STORAGE CLASS
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+  namespace: projetocompass
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: Immediate
+---
+#PERSISTENT VOLUME MYSQL
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv
+  namespace: projetocompass
+spec:
+  capacity:
+    storage: 3Gi
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: local-storage
+  hostPath:
+    path: /data/mysql-pv/
+---
+#PERSISTENT VOLUME CLAIM MAYSQL
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+  namespace: projetocompass
+  labels:
+    app: wordpress
+spec:
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+---
+#SERVICE MSQL
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress-mysql-svc
+  namespace: projetocompass
+  labels:
+    app: wordpress
+spec:
+  ports:
+    - port: 3308
+  selector:
+    app: wordpress
+    tier: mysql
+  clusterIP: None
+---
+#DEPLOYMENT MSQL
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress-mysql
+  namespace: projetocompass
+  labels:
+    app: wordpress
+spec:
+  selector:
+    matchLabels:
+      app: wordpress
+      tier: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wordpress
+        tier: mysql
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: password
+        ports:
+        - containerPort: 3308
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage-lab
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage-lab
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
