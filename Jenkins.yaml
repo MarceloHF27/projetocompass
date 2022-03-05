@@ -29,6 +29,20 @@ spec:
   hostPath:
     path: /data/jenkins-volume/
 ---
+#SERVICE JENKINS
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins
+  namespace: jenkins
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: jenkins
+---
 #DEPLOYMENT JENKINS
 apiVersion: apps/v1
 kind: Deployment
